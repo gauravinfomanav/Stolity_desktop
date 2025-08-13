@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stolity_desktop_application/components/app_nav.dart';
+import 'package:stolity_desktop_application/autotextsize.dart';
 
 class UploadProgressItem {
   final String id;
@@ -130,7 +131,7 @@ class _UploadPanelState extends State<_UploadPanel> with SingleTickerProviderSta
                   children: [
                     const Icon(Icons.cloud_upload_outlined, size: 16, color: Colors.black87),
                     const SizedBox(width: 6),
-                    const Text('Uploads', style: TextStyle(fontWeight: FontWeight.w600)),
+                    MusaffaAutoSizeText.titleSmall('Uploads', fontWeight: FontWeight.w600, color: Colors.black87),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -140,6 +141,8 @@ class _UploadPanelState extends State<_UploadPanel> with SingleTickerProviderSta
                       ),
                       child: Text('$count', style: const TextStyle(fontSize: 11)),
                     ),
+                    const SizedBox(width: 6),
+                    MusaffaAutoSizeText.labelMedium('$avg%', color: Colors.black54),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
@@ -149,37 +152,17 @@ class _UploadPanelState extends State<_UploadPanel> with SingleTickerProviderSta
                   ],
                 ),
                 const SizedBox(height: 6),
-                if (count > 1) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: (avg.clamp(0, 100)) / 100),
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      builder: (context, value, _) => LinearProgressIndicator(
-                        minHeight: 6,
-                        value: value,
-                        backgroundColor: const Color(0xFFF3F3F3),
-                        valueColor: const AlwaysStoppedAnimation(Color(0xFFFFAB49)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                ],
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 140),
-                  child: ListView.separated(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return _ProgressTile(item: item);
-                    },
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    minHeight: 8,
+                    value: (avg.clamp(0, 100)) / 100,
+                    backgroundColor: const Color(0xFFF3F3F3),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFFFFAB49)),
                   ),
                 ),
+                const SizedBox(height: 6),
+                // Single overall progress only; per-file bars removed intentionally
               ],
             ),
           ),
