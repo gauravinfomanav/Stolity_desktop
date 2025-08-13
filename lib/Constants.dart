@@ -18,7 +18,7 @@ class Constants {
   static const deletefolder = "${baseUrl}delete-folder";
   static const downloadfromurl = "${baseUrl}download-file-bucket";
   static const uploadfile = "${baseUrl}create-folder";
-  static const getuploadurl = "${baseUrl}upload-file";
+  static const getuploadurl = "https://filesapi.infomanav.in/prod/api/aws/upload-file";
   static const uploadfolder = "${baseUrl}upload-folder";
   static const getfiledata = "${baseUrl}getFile?filePath=";
   static const login = "${baseUrl}login-user";

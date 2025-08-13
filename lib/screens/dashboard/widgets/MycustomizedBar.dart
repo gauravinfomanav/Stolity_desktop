@@ -4,6 +4,7 @@ import 'package:stolity_desktop_application/application_constants.dart';
 import 'package:stolity_desktop_application/controllers/user_controller.dart';
 import 'package:stolity_desktop_application/dialogs/download_from_url/dialog.dart';
 import 'package:stolity_desktop_application/dialogs/upload_files/dialog.dart';
+import 'package:stolity_desktop_application/dialogs/upload_files/controller.dart';
 import 'package:stolity_desktop_application/screens/dashboard/widgets/custom_sort_filter_button.dart';
 import 'package:stolity_desktop_application/screens/dashboard/widgets/custombuttonforhome.dart';
 import 'package:stolity_desktop_application/screens/dashboard/widgets/searchbar.dart';
@@ -34,6 +35,12 @@ class _MyCustomizedBarState extends State<MyCustomizedBar> {
 
   @override
   Widget build(BuildContext context) {
+    // Wire refresh callback for uploads
+    UploadController.onRefresh = () {
+      if (widget.onRefreshRequested != null) {
+        widget.onRefreshRequested!();
+      }
+    };
     return LayoutBuilder(
       builder: (context, constraints) {
         return Row(

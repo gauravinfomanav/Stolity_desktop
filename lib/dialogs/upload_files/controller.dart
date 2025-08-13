@@ -54,6 +54,7 @@ class FolderController {
 
 
 class UploadController {
+  static VoidCallback? onRefresh; // set by caller to refresh UI on success
   static Future<void> uploadFilesOrFolder(
     BuildContext context,
     List<File> files,
@@ -103,6 +104,10 @@ class UploadController {
                 ? "Files uploaded successfully!"
                 : "File uploaded successfully!"),
       );
+      // Inform UI to refresh
+      if (onRefresh != null) {
+        onRefresh!();
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error uploading files: $e');
@@ -122,6 +127,14 @@ class UploadController {
   ) async {
     const String uploadEndpoint = Constants.getuploadurl;
 
+    // Prepare cookies per curl example
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? refreshToken = prefs.getString('refreshToken');
+    final String cookieHeader = [
+      if (accessToken != null && accessToken.isNotEmpty) 'accessToken=$accessToken',
+      if (refreshToken != null && refreshToken.isNotEmpty) 'refreshToken=$refreshToken',
+    ].join('; ');
+
     for (int i = 0; i < files.length; i++) {
       final File file = files[i];
       final String fileName = path.basename(file.path);
@@ -135,18 +148,34 @@ class UploadController {
 
       // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse(uploadEndpoint));
-      print(request.url);
+      if (kDebugMode) {
+        print('[UPLOAD] Endpoint: ${request.url}');
+      }
       
-      // Add headers
-      request.headers['Authorization'] = 'Bearer ${accessToken ?? ''}';
-      
-      // Add file
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+      // Add headers (use Cookie like curl; keep Authorization if available)
+      if (cookieHeader.isNotEmpty) {
+        request.headers['Cookie'] = cookieHeader;
+      }
+      if (accessToken != null && accessToken.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $accessToken';
+      }
+
+      // Add file (API expects field name 'files')
+      final fileLength = await file.length();
+      final mpFile = await http.MultipartFile.fromPath('files', file.path, filename: sanitizedName);
+      request.files.add(mpFile);
       
       // Add metadata
       request.fields['fileName'] = sanitizedName;
-      request.fields['fileSize'] = (await file.length()).toString();
-      request.fields['acl'] = isPrivate ? "private" : "public-read";
+      request.fields['fileSize'] = fileLength.toString();
+      // Match curl: isPrivate carries ACL value
+      request.fields['isPrivate'] = isPrivate ? "private" : "public-read";
+
+      if (kDebugMode) {
+        print('[UPLOAD] Headers: ${request.headers}');
+        print('[UPLOAD] Fields: ${request.fields}');
+        print('[UPLOAD] Files: ${request.files.map((f) => '${f.field}:${f.filename}').toList()}');
+      }
 
       // Send request with progress tracking
       var streamedResponse = await request.send();
@@ -157,6 +186,12 @@ class UploadController {
         onUploadProgress?.call(uploadId, p);
         UploadProgressOverlay()
             .addOrUpdate(UploadProgressItem(id: uploadId, label: sanitizedName, progress: p));
+      }
+
+      final responseBody = await streamedResponse.stream.bytesToString();
+      if (kDebugMode) {
+        print('[UPLOAD] Status: ${streamedResponse.statusCode}');
+        print('[UPLOAD] Response: $responseBody');
       }
 
       if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
@@ -189,6 +224,9 @@ class UploadController {
 
     // Create multipart request
     var request = http.MultipartRequest('POST', Uri.parse(uploadFolderEndpoint));
+    if (kDebugMode) {
+      print('[UPLOAD_FOLDER] Endpoint: ${request.url}');
+    }
     
     // Add headers
     request.headers['Authorization'] = 'Bearer ${accessToken ?? ''}';
@@ -215,14 +253,14 @@ class UploadController {
       final String sanitizedName = isVideoFile(fileName) ? sanitizeFilename(fileName) : fileName;
 
       if (kDebugMode) {
-        print('Processing file: $fileName with relative path: $relativePath, localPath: $localPath');
+        print('[UPLOAD_FOLDER] add file: $sanitizedName rel: "$relativePath"');
       }
 
       // Add file to request
-      var multipartFile = await http.MultipartFile.fromPath('files', file.path);
+      var multipartFile = await http.MultipartFile.fromPath('files', file.path, filename: sanitizedName);
       request.files.add(multipartFile);
       
-      // Add file metadata as fields
+      // Add file metadata as fields (comma-separated accumulation)
       request.fields['fileNames'] = request.fields['fileNames'] != null 
           ? '${request.fields['fileNames']!},$sanitizedName'
           : sanitizedName;
@@ -236,6 +274,12 @@ class UploadController {
           : (await file.length()).toString();
     }
 
+    if (kDebugMode) {
+      print('[UPLOAD_FOLDER] Headers: ${request.headers}');
+      print('[UPLOAD_FOLDER] Fields: ${request.fields}');
+      print('[UPLOAD_FOLDER] Files: count=${request.files.length}');
+    }
+
     // Send request with progress tracking
     var streamedResponse = await request.send();
 
@@ -245,6 +289,12 @@ class UploadController {
       onUploadProgress?.call(uploadId, p);
       UploadProgressOverlay()
           .addOrUpdate(UploadProgressItem(id: uploadId, label: 'Folder: $localPath', progress: p));
+    }
+
+    final responseBody = await streamedResponse.stream.bytesToString();
+    if (kDebugMode) {
+      print('[UPLOAD_FOLDER] Status: ${streamedResponse.statusCode}');
+      print('[UPLOAD_FOLDER] Response: $responseBody');
     }
 
     if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
