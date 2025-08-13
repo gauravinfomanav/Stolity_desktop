@@ -14,6 +14,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:stolity_desktop_application/dialogs/stolity_alert_prompt.dart';
 import 'package:stolity_desktop_application/screens/open_file/controller.dart';
 
+const Color _accent = Color(0xFFFFAB49);
+const Color _surface = Colors.white;
+
 class FileViewer extends StatefulWidget {
   final String filePath;
   final String fileName;
@@ -154,9 +157,16 @@ class _FileViewerState extends State<FileViewer> {
 
   Widget _buildImageViewer() {
     return Center(
-      child: Image.file(
-        File(widget.filePath),
-        fit: BoxFit.contain,
+      child: InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 5,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200, maxHeight: 900),
+          child: Image.file(
+            File(widget.filePath),
+            fit: BoxFit.contain,
+          ),
+        ),
       ),
     );
   }
@@ -262,11 +272,17 @@ class _FileViewerState extends State<FileViewer> {
   }
 
   Widget _buildVideoPlayer() {
-    _videoController ??= VideoPlayerController.file(File(widget.filePath));
+    if (_videoController == null) {
+      _videoController = VideoPlayerController.file(File(widget.filePath));
+      _videoController!.addListener(() {
+        if (mounted) setState(() {});
+      });
+    }
     _chewieController ??= ChewieController(
       videoPlayerController: _videoController!,
       autoPlay: false,
       looping: false,
+      // Chewie will be wrapped by AspectRatio; keep a sane default here
       aspectRatio: 16 / 9,
       autoInitialize: true,
       errorBuilder: (context, errorMessage) {
@@ -278,7 +294,21 @@ class _FileViewerState extends State<FileViewer> {
         );
       },
     );
-    return Chewie(controller: _chewieController!);
+    final aspect = _videoController!.value.isInitialized
+        ? _videoController!.value.aspectRatio
+        : (16 / 9);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200, maxHeight: 900),
+        child: AspectRatio(
+          aspectRatio: aspect,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Chewie(controller: _chewieController!),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildAudioPlayer() {
@@ -357,20 +387,36 @@ class _FileViewerState extends State<FileViewer> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.fileName, overflow: TextOverflow.ellipsis),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0.5,
+        title: Text(
+          widget.fileName,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.black87),
+        ),
         actions: [
-          IconButton(
-            tooltip: 'Download',
-            icon: const Icon(Icons.download_rounded),
-            onPressed: () {
-              final key = widget.fileKey ?? widget.fileName;
-              FileOpenController().backgroundDownloadByKey(context, key);
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              onPressed: () {
+                final key = widget.fileKey ?? widget.fileName;
+                FileOpenController().backgroundDownloadByKey(context, key);
+              },
+              icon: const Icon(Icons.download_rounded, size: 18),
+              label: const Text('Download', style: TextStyle(fontSize: 13)),
+            ),
           ),
         ],
       ),
       body: Container(
-        color: const Color(0xFFF7F7F9),
+        color: _surface,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
