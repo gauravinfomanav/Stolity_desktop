@@ -54,10 +54,10 @@ class FileGridCell extends StatelessWidget {
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.only(top: 8),
                     child: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
@@ -80,7 +80,7 @@ class FileGridCell extends StatelessWidget {
                     padding: const EdgeInsets.all(4.0),
                     child: Padding(
                       padding: const EdgeInsets.only(
-                          left: 16, top: 22, right: 10, bottom: 0),
+                          left: 16, top: 12, right: 16, bottom: 0),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,11 +102,15 @@ class FileGridCell extends StatelessWidget {
                               fontSize: 12,
                             ),
                           ),
-                          Text(
-                            dateModified,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
+                          const SizedBox(height: 2),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              dateModified,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
@@ -116,7 +120,7 @@ class FileGridCell extends StatelessWidget {
                 ],
               ),
               Positioned(
-                top: 20,
+                top: 12,
                 left: 8,
                 child: Checkbox(
                   value: isSelected,
