@@ -14,6 +14,7 @@ class MyCustomizedBar extends StatefulWidget {
   final Function(List<String>)? onFileTypeSelected;
   final Function(int)? onViewToggle;
   final Function(List<FileModel>, String)? onSearchResults;
+  final VoidCallback? onRefreshRequested;
 
   const MyCustomizedBar({
     super.key,
@@ -21,6 +22,7 @@ class MyCustomizedBar extends StatefulWidget {
     this.onSortSelected,
     this.onFileTypeSelected,
     this.onSearchResults,
+    this.onRefreshRequested,
   });
 
   @override
@@ -147,7 +149,11 @@ class _MyCustomizedBarState extends State<MyCustomizedBar> {
                               showDialog(
                                 context: context,
                                 builder: (context) => FileUploadDialog(),
-                              );
+                              ).then((value) {
+                                if (value == 'refresh' && widget.onRefreshRequested != null) {
+                                  widget.onRefreshRequested!();
+                                }
+                              });
                             },
                             text: "Upload Files",
                             svgIconPath: assetutils.upload_file_icon,

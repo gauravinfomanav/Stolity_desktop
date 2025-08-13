@@ -7,6 +7,7 @@ import 'package:stolity_desktop_application/screens/dashboard/dashboard.dart';
 import 'package:stolity_desktop_application/screens/main_screen/main_screen.dart';
 import 'package:window_size/window_size.dart';
 import 'package:http/http.dart' as http;
+import 'package:stolity_desktop_application/components/app_nav.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: 'Flutter Demo',
+      navigatorKey: appNavigatorKey,
       theme: ThemeData(
         popupMenuTheme: PopupMenuThemeData(
     color: Colors.white,

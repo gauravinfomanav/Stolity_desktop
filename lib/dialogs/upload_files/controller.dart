@@ -7,6 +7,8 @@ import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:stolity_desktop_application/Constants.dart';
+import 'package:stolity_desktop_application/components/stolity_snackbar.dart';
+import 'package:stolity_desktop_application/components/upload_progress_overlay.dart';
 
 class FolderController {
   static Future<void> createFolder(
@@ -35,30 +37,16 @@ class FolderController {
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar(
-          "Success",
-          "Folder '$folderName' created successfully!",
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+        showStolitySnack(context, "Folder '$folderName' created successfully!");
+        Navigator.of(context).pop('refresh');
       } else {
-        Get.snackbar(
-          "Error",
-          "Failed to create folder: ${response.statusCode}",
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        showStolitySnack(context, "Failed to create folder: ${response.statusCode}");
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error creating folder: $e');
       }
-      Get.snackbar(
-        "Error",
-        "Error creating folder: ${e.toString()}",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      showStolitySnack(context, "Error creating folder: ${e.toString()}");
     }
   }
 }
@@ -76,12 +64,7 @@ class UploadController {
     Function(String id)? onUploadComplete,
   ) async {
     if (files.isEmpty) {
-      Get.snackbar(
-        "Error",
-        "Please select files or a folder to upload.",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      showStolitySnack(context, "Please select files or a folder to upload.");
       return;
     }
 
@@ -112,27 +95,20 @@ class UploadController {
         );
       }
 
-      Get.snackbar(
-        "Success",
+      showStolitySnack(
+        context,
         folderPath.isNotEmpty
             ? "Folder uploaded successfully!"
             : (files.length > 1
                 ? "Files uploaded successfully!"
                 : "File uploaded successfully!"),
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
       );
     } catch (e) {
       if (kDebugMode) {
         print('Error uploading files: $e');
       }
 
-      Get.snackbar(
-        "Error",
-        "Error uploading files: ${e.toString()}",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      showStolitySnack(context, "Error uploading files: ${e.toString()}");
     }
   }
 
@@ -152,10 +128,10 @@ class UploadController {
       final String sanitizedName = isVideoFile(fileName) ? sanitizeFilename(fileName) : fileName;
       final String uploadId = "${DateTime.now().millisecondsSinceEpoch}_$i";
 
-      // Notify upload started
-      if (onUploadStart != null) {
-        onUploadStart(uploadId, "Uploading $sanitizedName");
-      }
+      // Notify upload started and show overlay
+      onUploadStart?.call(uploadId, "Uploading $sanitizedName");
+      UploadProgressOverlay()
+          .addOrUpdate(UploadProgressItem(id: uploadId, label: sanitizedName, progress: 0));
 
       // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse(uploadEndpoint));
@@ -175,18 +151,18 @@ class UploadController {
       // Send request with progress tracking
       var streamedResponse = await request.send();
 
-      // Simulate progress updates
-      if (onUploadProgress != null) {
-        for (int p = 10; p <= 100; p += 10) {
-          await Future.delayed(Duration(milliseconds: 100));
-          onUploadProgress(uploadId, p);
-        }
+      // Simulate progress updates and update overlay
+      for (int p = 10; p <= 100; p += 10) {
+        await Future.delayed(Duration(milliseconds: 100));
+        onUploadProgress?.call(uploadId, p);
+        UploadProgressOverlay()
+            .addOrUpdate(UploadProgressItem(id: uploadId, label: sanitizedName, progress: p));
       }
 
       if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
-        if (onUploadComplete != null) {
-          onUploadComplete(uploadId);
-        }
+        onUploadComplete?.call(uploadId);
+        UploadProgressOverlay()
+            .addOrUpdate(UploadProgressItem(id: uploadId, label: sanitizedName, progress: 100));
       } else {
         throw Exception('Failed to upload file: ${streamedResponse.statusCode}');
       }
@@ -206,10 +182,10 @@ class UploadController {
     final String uploadId = "${DateTime.now().millisecondsSinceEpoch}_folder";
     final String localPath = path.basename(folderPath);
 
-    // Notify upload started
-    if (onUploadStart != null) {
-      onUploadStart(uploadId, "Uploading folder $localPath");
-    }
+    // Notify upload started and show overlay
+    onUploadStart?.call(uploadId, "Uploading folder $localPath");
+    UploadProgressOverlay()
+        .addOrUpdate(UploadProgressItem(id: uploadId, label: 'Folder: $localPath', progress: 0));
 
     // Create multipart request
     var request = http.MultipartRequest('POST', Uri.parse(uploadFolderEndpoint));
@@ -263,18 +239,18 @@ class UploadController {
     // Send request with progress tracking
     var streamedResponse = await request.send();
 
-    // Simulate progress updates
-    if (onUploadProgress != null) {
-      for (int p = 10; p <= 100; p += 10) {
-        await Future.delayed(Duration(milliseconds: 200));
-        onUploadProgress(uploadId, p);
-      }
+    // Simulate progress updates and update overlay
+    for (int p = 10; p <= 100; p += 10) {
+      await Future.delayed(Duration(milliseconds: 200));
+      onUploadProgress?.call(uploadId, p);
+      UploadProgressOverlay()
+          .addOrUpdate(UploadProgressItem(id: uploadId, label: 'Folder: $localPath', progress: p));
     }
 
     if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) {
-      if (onUploadComplete != null) {
-        onUploadComplete(uploadId);
-      }
+      onUploadComplete?.call(uploadId);
+      UploadProgressOverlay()
+          .addOrUpdate(UploadProgressItem(id: uploadId, label: 'Folder: $localPath', progress: 100));
     } else {
       throw Exception('Failed to upload folder: ${streamedResponse.statusCode}');
     }

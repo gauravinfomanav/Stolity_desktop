@@ -53,6 +53,7 @@ dependencies:
   just_audio: ^0.10.2
   csv: ^6.0.0
   auto_size_text: ^3.0.0
+  desktop_drop: ^0.6.1
   
   
   

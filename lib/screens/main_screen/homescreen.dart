@@ -272,6 +272,7 @@ void _refreshWithFileTypes(List<String> fileTypes) {
           onFileTypeSelected: _refreshWithFileTypes,
           onViewToggle: _onViewToggle,
           onSearchResults: _onSearchResults,
+          onRefreshRequested: refreshFiles,
         ),
         const SizedBox(height: 10),
         if (_selectedFileNames.isNotEmpty)
