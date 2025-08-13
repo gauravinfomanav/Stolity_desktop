@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:path/path.dart' as path;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -9,6 +10,8 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:stolity_desktop_application/dialogs/stolity_alert_prompt.dart';
 
 class FileViewer extends StatefulWidget {
   final String filePath;
@@ -28,6 +31,9 @@ class _FileViewerState extends State<FileViewer> {
   late Widget _fileContentWidget;
   bool _isLoading = true;
   String? _error;
+  VideoPlayerController? _videoController;
+  ChewieController? _chewieController;
+  AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
@@ -55,6 +61,9 @@ class _FileViewerState extends State<FileViewer> {
         case '.bmp':
           _fileContentWidget = _buildImageViewer();
           break;
+        case '.svg':
+          _fileContentWidget = _buildSvgViewer();
+          break;
         case '.txt':
           _fileContentWidget = await _buildTextViewer();
           break;
@@ -79,13 +88,35 @@ class _FileViewerState extends State<FileViewer> {
         case '.m4a':
           _fileContentWidget = _buildAudioPlayer();
           break;
+        case '.json':
+          _fileContentWidget = await _buildJsonViewer();
+          break;
+        case '.yml':
+        case '.yaml':
+        case '.xml':
+        case '.log':
+        case '.ini':
+          _fileContentWidget = await _buildTextViewer();
+          break;
         default:
-          _fileContentWidget = Center(
-            child: Text(
-              'Unsupported file type: $fileExtension',
-              style: const TextStyle(fontSize: 16),
-            ),
-          );
+          // Initialize a safe placeholder to avoid LateInitializationError in build
+          _fileContentWidget = const SizedBox.shrink();
+          // Schedule prompt after first frame to avoid calling before init completes
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            await StolityPrompt.show(
+              context: context,
+              title: 'Unsupported file',
+              subtitle: 'This file type ($fileExtension) is not supported for in-app preview.',
+              negativeButtonText: '',
+              positiveButtonText: 'OK',
+              onPositivePressed: () => Navigator.of(context).pop(),
+            );
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          });
+          return;
       }
     } catch (e) {
       setState(() {
@@ -96,6 +127,15 @@ class _FileViewerState extends State<FileViewer> {
         _isLoading = false;
       });
     }
+  }
+
+  Widget _buildSvgViewer() {
+    return Center(
+      child: SvgPicture.file(
+        File(widget.filePath),
+        fit: BoxFit.contain,
+      ),
+    );
   }
 
   Widget _buildPdfViewer() {
@@ -188,10 +228,40 @@ class _FileViewerState extends State<FileViewer> {
     );
   }
 
+  Future<Widget> _buildJsonViewer() async {
+    try {
+      final content = await File(widget.filePath).readAsString();
+      final dynamic decoded = jsonDecode(content);
+      final pretty = const JsonEncoder.withIndent('  ').convert(decoded);
+      return SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SelectableText(
+            pretty,
+            style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+          ),
+        ),
+      );
+    } catch (e) {
+      // Fallback to raw if parse fails
+      try {
+        final raw = await File(widget.filePath).readAsString();
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SelectableText(raw, style: const TextStyle(fontSize: 13)),
+          ),
+        );
+      } catch (e2) {
+        return Center(child: Text('Error loading JSON file: $e2'));
+      }
+    }
+  }
+
   Widget _buildVideoPlayer() {
-    final videoPlayerController = VideoPlayerController.file(File(widget.filePath));
-    final chewieController = ChewieController(
-      videoPlayerController: videoPlayerController,
+    _videoController ??= VideoPlayerController.file(File(widget.filePath));
+    _chewieController ??= ChewieController(
+      videoPlayerController: _videoController!,
       autoPlay: false,
       looping: false,
       aspectRatio: 16 / 9,
@@ -205,13 +275,12 @@ class _FileViewerState extends State<FileViewer> {
         );
       },
     );
-
-    return Chewie(controller: chewieController);
+    return Chewie(controller: _chewieController!);
   }
 
   Widget _buildAudioPlayer() {
-    final audioPlayer = AudioPlayer();
-    audioPlayer.setFilePath(widget.filePath);
+    _audioPlayer ??= AudioPlayer();
+    _audioPlayer!.setFilePath(widget.filePath);
     
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -227,15 +296,15 @@ class _FileViewerState extends State<FileViewer> {
           ),
           const SizedBox(height: 32),
           StreamBuilder<Duration>(
-            stream: audioPlayer.positionStream,
+            stream: _audioPlayer!.positionStream,
             builder: (context, snapshot) {
               final position = snapshot.data ?? Duration.zero;
-              final duration = audioPlayer.duration ?? Duration.zero;
+              final duration = _audioPlayer!.duration ?? Duration.zero;
               return ProgressBar(
                 progress: position,
                 total: duration,
                 onSeek: (duration) {
-                  audioPlayer.seek(duration);
+                  _audioPlayer!.seek(duration);
                 },
               );
             },
@@ -245,7 +314,7 @@ class _FileViewerState extends State<FileViewer> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               StreamBuilder<PlayerState>(
-                stream: audioPlayer.playerStateStream,
+                stream: _audioPlayer!.playerStateStream,
                 builder: (context, snapshot) {
                   final playerState = snapshot.data;
                   final processingState = playerState?.processingState;
@@ -263,13 +332,13 @@ class _FileViewerState extends State<FileViewer> {
                     return IconButton(
                       icon: const Icon(Icons.play_arrow),
                       iconSize: 32.0,
-                      onPressed: audioPlayer.play,
+                      onPressed: _audioPlayer!.play,
                     );
                   } else {
                     return IconButton(
                       icon: const Icon(Icons.pause),
                       iconSize: 32.0,
-                      onPressed: audioPlayer.pause,
+                      onPressed: _audioPlayer!.pause,
                     );
                   }
                 },
@@ -307,5 +376,13 @@ class _FileViewerState extends State<FileViewer> {
               ? Center(child: Text(_error!))
               : _fileContentWidget,
     );
+  }
+
+  @override
+  void dispose() {
+    _chewieController?.dispose();
+    _videoController?.dispose();
+    _audioPlayer?.dispose();
+    super.dispose();
   }
 }

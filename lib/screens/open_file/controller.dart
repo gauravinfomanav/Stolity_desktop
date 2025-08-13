@@ -5,20 +5,38 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:stolity_desktop_application/Constants.dart';
 import 'package:stolity_desktop_application/screens/open_file/fileviewer.dart';
+import 'package:path/path.dart' as p;
+import 'package:stolity_desktop_application/dialogs/stolity_alert_prompt.dart';
 
 
 class FileOpenController {
   Future<void> fetchAndOpenFile(BuildContext context, String fileName) async {
     try {
-      // Show loading indicator
+      // Pre-check extension to avoid navigating for unsupported types
+      final ext = p.extension(fileName).toLowerCase();
+      const supported = {
+        '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg',
+        '.txt', '.md', '.csv', '.xlsx', '.xls',
+        '.mp4', '.avi', '.mov', '.wmv',
+        '.mp3', '.wav', '.m4a',
+        '.json', '.yml', '.yaml', '.xml', '.log', '.ini'
+      };
+      if (!supported.contains(ext)) {
+        await StolityPrompt.show(
+          context: context,
+          title: 'Unsupported file',
+          subtitle: 'This file type ($ext) is not supported for in-app preview.',
+          negativeButtonText: '',
+          positiveButtonText: 'OK',
+        );
+        return;
+      }
+
+      // Show loading indicator now that we know it's supported
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        },
+        builder: (BuildContext context) => const Center(child: CircularProgressIndicator()),
       );
 
       // Construct the URL
