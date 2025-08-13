@@ -40,6 +40,7 @@ class _FileViewerState extends State<FileViewer> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   AudioPlayer? _audioPlayer;
+  bool _enteredVideoFullScreenOnce = false;
 
   @override
   void initState() {
@@ -277,38 +278,41 @@ class _FileViewerState extends State<FileViewer> {
       _videoController!.addListener(() {
         if (mounted) setState(() {});
       });
+      _videoController!.initialize().then((_) {
+        if (mounted) setState(() {});
+      });
     }
-    _chewieController ??= ChewieController(
-      videoPlayerController: _videoController!,
-      autoPlay: false,
-      looping: false,
-      // Chewie will be wrapped by AspectRatio; keep a sane default here
-      aspectRatio: 16 / 9,
-      autoInitialize: true,
-      errorBuilder: (context, errorMessage) {
-        return Center(
-          child: Text(
-            errorMessage,
-            style: const TextStyle(color: Colors.white),
-          ),
-        );
-      },
-    );
-    final aspect = _videoController!.value.isInitialized
-        ? _videoController!.value.aspectRatio
-        : (16 / 9);
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200, maxHeight: 900),
-        child: AspectRatio(
-          aspectRatio: aspect,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Chewie(controller: _chewieController!),
-          ),
-        ),
-      ),
-    );
+    if (_chewieController == null) {
+      _chewieController = ChewieController(
+        videoPlayerController: _videoController!,
+        autoPlay: false,
+        looping: false,
+        autoInitialize: false,
+        fullScreenByDefault: true,
+        allowFullScreen: true,
+        errorBuilder: (context, errorMessage) {
+          return Center(
+            child: Text(
+              errorMessage,
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
+        },
+      );
+      _chewieController!.addListener(() {
+        if (!mounted) return;
+        final isFull = _chewieController!.isFullScreen;
+        if (isFull && !_enteredVideoFullScreenOnce) {
+          _enteredVideoFullScreenOnce = true;
+        }
+        if (_enteredVideoFullScreenOnce && !isFull) {
+          // Prevent returning to embedded mode: close the viewer route
+          Navigator.of(context).maybePop();
+        }
+      });
+    }
+
+    return Chewie(controller: _chewieController!);
   }
 
   Widget _buildAudioPlayer() {
