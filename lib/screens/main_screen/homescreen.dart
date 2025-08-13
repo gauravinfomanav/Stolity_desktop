@@ -358,13 +358,15 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                               fileName: file.fileName,
                               fileSize: file.fileSize,
                               fileIcon: file.icon,
+                              fileUrl: file.url,
                               dateModified: file.uploadDateTime,
                               fileType: file.fileType,
                               isSelected:
                                   _selectedFileNames.contains(file.fileName),
                               onTap: () {
+                                final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
                                 _fileopencontroller.fetchAndOpenFile(
-                                    context, file.fileName);
+                                    context, file.fileName, fileKey: keyFromUrl);
                               },
                               onSelect: (selected) {
                                 _toggleFileSelection(file.fileName, selected);
@@ -379,13 +381,15 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                     fileName: file.fileName,
                                     fileSize: file.fileSize,
                                     fileIcon: file.icon,
+                                    fileUrl: file.url,
                                     dateModified: file.uploadDateTime,
                                     fileType: file.fileType,
                                     isSelected: _selectedFileNames
                                         .contains(file.fileName),
                                     onTap: () {
+                                      final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
                                       _fileopencontroller.fetchAndOpenFile(
-                                          context, file.fileName);
+                                          context, file.fileName, fileKey: keyFromUrl);
                                     },
                                     onSelect: (selected) {
                                       _toggleFileSelection(
@@ -415,13 +419,15 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                   fileName: file.fileName,
                                   fileSize: file.fileSize,
                                   fileIcon: file.icon,
+                                  fileUrl: file.url,
                                   dateModified: file.uploadDateTime,
                                   fileType: file.fileType,
                                   isSelected: _selectedFileNames
                                       .contains(file.fileName),
                                   onTap: () {
+                                    final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
                                     _fileopencontroller.fetchAndOpenFile(
-                                        context, file.fileName);
+                                        context, file.fileName, fileKey: keyFromUrl);
                                   },
                                   onSelect: (selected) {
                                     _toggleFileSelection(
@@ -437,13 +443,15 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                         fileName: file.fileName,
                                         fileSize: file.fileSize,
                                         fileIcon: file.icon,
+                                        fileUrl: file.url,
                                         dateModified: file.uploadDateTime,
                                         fileType: file.fileType,
                                         isSelected: _selectedFileNames
                                             .contains(file.fileName),
                                         onTap: () {
+                                          final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
                                           _fileopencontroller.fetchAndOpenFile(
-                                              context, file.fileName);
+                                              context, file.fileName, fileKey: keyFromUrl);
                                         },
                                         onSelect: (selected) {
                                           _toggleFileSelection(

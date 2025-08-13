@@ -12,15 +12,18 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:stolity_desktop_application/dialogs/stolity_alert_prompt.dart';
+import 'package:stolity_desktop_application/screens/open_file/controller.dart';
 
 class FileViewer extends StatefulWidget {
   final String filePath;
   final String fileName;
+  final String? fileKey;
 
   const FileViewer({
     Key? key,
     required this.filePath,
     required this.fileName,
+    this.fileKey,
   }) : super(key: key);
 
   @override
@@ -354,27 +357,29 @@ class _FileViewerState extends State<FileViewer> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.fileName),
+        title: Text(widget.fileName, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
+            tooltip: 'Download',
+            icon: const Icon(Icons.download_rounded),
             onPressed: () {
-              // Implement download functionality if needed
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              // Implement share functionality if needed
+              final key = widget.fileKey ?? widget.fileName;
+              FileOpenController().backgroundDownloadByKey(context, key);
             },
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!))
-              : _fileContentWidget,
+      body: Container(
+        color: const Color(0xFFF7F7F9),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(child: Text(_error!))
+                : Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: _fileContentWidget,
+                  ),
+      ),
     );
   }
 

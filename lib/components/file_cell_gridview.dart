@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:stolity_desktop_application/Constants.dart';
 import 'package:stolity_desktop_application/controllers/user_controller.dart';
 import 'package:stolity_desktop_application/dialogs/stolity_alert_prompt.dart';
+import 'package:stolity_desktop_application/screens/open_file/controller.dart';
 
 class FileGridCell extends StatelessWidget {
   final String fileName;
@@ -15,6 +16,7 @@ class FileGridCell extends StatelessWidget {
   final Function(bool)? onSelect;
   final String? fileIcon;
   final Function(String)? onDelete;
+  final String? fileUrl;
 
   const FileGridCell({
     Key? key,
@@ -27,6 +29,7 @@ class FileGridCell extends StatelessWidget {
     this.onSelect,
     this.fileIcon,
     this.onDelete, // Added to constructor
+    this.fileUrl,
   }) : super(key: key);
 
   @override
@@ -151,6 +154,12 @@ class FileGridCell extends StatelessWidget {
                       case 'delete':
                         _handleDelete(context);
                         break;
+                      case 'download':
+                        final key = (fileUrl != null && fileUrl!.isNotEmpty)
+                            ? Uri.parse(fileUrl!).path.substring(1)
+                            : fileName;
+                        FileOpenController().backgroundDownloadByKey(context, key);
+                        break;
                     }
                   },
                   itemBuilder: (BuildContext context) =>
@@ -188,6 +197,13 @@ class FileGridCell extends StatelessWidget {
                   child: ListTile(
                     leading: Icon(CupertinoIcons.square_pencil),
                     title: const Text('Rename'),
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'download',
+                  child: ListTile(
+                    leading: Icon(Icons.download_rounded),
+                    title: Text('Download', style: TextStyle(fontFamily: Constants.FONT_DEFAULT_NEW, fontSize: 12, color: Colors.black)),
                   ),
                 ),
                 const PopupMenuItem<String>(
