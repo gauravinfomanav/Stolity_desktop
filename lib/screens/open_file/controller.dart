@@ -12,6 +12,35 @@ import 'package:stolity_desktop_application/components/stolity_snackbar.dart';
 
 
 class FileOpenController {
+  String _extractKeyCandidate(String? fileKeyOrUrl, String fallbackName) {
+    if (fileKeyOrUrl == null || fileKeyOrUrl.isEmpty) return fallbackName;
+    try {
+      final uri = Uri.parse(fileKeyOrUrl);
+      if (uri.hasQuery && uri.queryParameters.containsKey('key')) {
+        return Uri.decodeComponent(uri.queryParameters['key']!);
+      }
+      // Not a key URL; use path without leading slash
+      final path = uri.path.isNotEmpty ? uri.path : fileKeyOrUrl;
+      final trimmed = path.startsWith('/') ? path.substring(1) : path;
+      return Uri.decodeComponent(trimmed);
+    } catch (_) {
+      return Uri.decodeComponent(fileKeyOrUrl);
+    }
+  }
+
+  String _relativePathForGetFile(String keyOrPath, String fileName) {
+    // If it looks like 'user_xxx/...', strip the first segment; otherwise keep as-is
+    final parts = keyOrPath.split('/');
+    if (parts.length > 1 && parts.first.startsWith('user_')) {
+      return parts.sublist(1).join('/');
+    }
+    // If no slash, fall back to fileName to avoid using tokens like 'download-file'
+    if (!keyOrPath.contains('/')) {
+      return fileName;
+    }
+    return keyOrPath;
+  }
+
   Future<void> fetchAndOpenFile(BuildContext context, String fileName, {String? fileKey}) async {
     try {
       // Pre-check extension to avoid navigating for unsupported types
@@ -41,8 +70,9 @@ class FileOpenController {
         builder: (BuildContext context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Construct the URL
-      final url = Uri.parse("${Constants.getfiledata}$fileName");
+      final candidate = _extractKeyCandidate(fileKey, fileName);
+      final relativeForGetFile = _relativePathForGetFile(candidate, fileName);
+      final url = Uri.parse("${Constants.getfiledata}${Uri.encodeQueryComponent(relativeForGetFile)}");
       if (kDebugMode) {
         print('[OPEN] GET: $url');
       }
@@ -75,8 +105,10 @@ class FileOpenController {
 
       if (response.statusCode == 200) {
         final directory = await getApplicationDocumentsDirectory();
-        final filePath = '${directory.path}/$fileName';
+        final localRelativePath = relativeForGetFile;
+        final filePath = '${directory.path}/$localRelativePath';
         final file = File(filePath);
+        await file.create(recursive: true);
         await file.writeAsBytes(response.bodyBytes);
         if (kDebugMode) {
           print('[OPEN] Saved to: $filePath');
@@ -89,7 +121,7 @@ class FileOpenController {
             builder: (context) => FileViewer(
               filePath: filePath,
               fileName: fileName,
-              fileKey: fileKey ?? fileName,
+              fileKey: candidate,
             ),
           ),
         );
@@ -132,7 +164,8 @@ class FileOpenController {
 
       showStolitySnack(context, 'Download started. File will be saved to Downloads.');
 
-      final encKey = Uri.encodeQueryComponent(key);
+      final normalizedKey = _extractKeyCandidate(key, key);
+      final encKey = Uri.encodeQueryComponent(normalizedKey);
       final url = Uri.parse('${Constants.downloadFileByKey}$encKey');
       if (kDebugMode) {
         print('[DL] GET /download-file: $url');
@@ -154,7 +187,7 @@ class FileOpenController {
       }
 
       Future<String> saveBytes(Uint8List bytes) async {
-        final fileName = p.basename(key);
+        final fileName = p.basename(normalizedKey);
         // Try Downloads first
         try {
           final downloads = await getDownloadsDirectory();
@@ -183,8 +216,9 @@ class FileOpenController {
         }
         showStolitySnack(context, 'File downloaded successfully.');
       } else if (response.statusCode == 404) {
-        // Fallback: use getFile?filePath= (works for viewing) when key-based download fails
-        final fallbackUrl = Uri.parse('${Constants.getfiledata}${Uri.encodeQueryComponent(p.basename(key))}');
+        // Fallback: use getFile?filePath= with the relative path (strip leading bucket/user prefix when present)
+        final relativeForGet = _relativePathForGetFile(normalizedKey, p.basename(normalizedKey));
+        final fallbackUrl = Uri.parse('${Constants.getfiledata}${Uri.encodeQueryComponent(relativeForGet)}');
         if (kDebugMode) {
           print('[DL] Fallback GET: $fallbackUrl');
         }

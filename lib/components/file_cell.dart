@@ -107,10 +107,10 @@ class FileCell extends StatelessWidget {
                     _handleDelete(context);
                     break;
                   case 'download':
-                    final key = (fileUrl != null && fileUrl!.isNotEmpty)
-                        ? Uri.parse(fileUrl!).path.substring(1)
+                    final keyOrUrl = (fileUrl != null && fileUrl!.isNotEmpty)
+                        ? fileUrl!
                         : fileName;
-                    FileOpenController().backgroundDownloadByKey(context, key);
+                    FileOpenController().backgroundDownloadByKey(context, keyOrUrl);
                     break;
                 }
               },

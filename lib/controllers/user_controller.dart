@@ -319,3 +319,50 @@ class FileModel {
     );
   }
 }
+
+class FolderContents {
+  final String folderPath;
+  final List<FileModel> files;
+  final List<String> folders; // names/paths of subfolders
+  FolderContents({required this.folderPath, required this.files, required this.folders});
+}
+
+extension FolderApi on UserController {
+  Future<FolderContents> getFolderContents(BuildContext context, String folderPath) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? accessToken = prefs.getString('accessToken');
+      final url = Uri.parse('${Constants.getFolder}${Uri.encodeQueryComponent(folderPath)}');
+      if (kDebugMode) {
+        print('[FOLDER] GET: $url');
+      }
+      final response = await http.get(url, headers: {
+        if (accessToken != null && accessToken.isNotEmpty) 'Authorization': 'Bearer $accessToken',
+      });
+      if (kDebugMode) {
+        print('[FOLDER] Status: ${response.statusCode}');
+      }
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is List) {
+          // API returned a list of file objects
+          final files = decoded.map<FileModel>((j) => FileModel.fromJson(j as Map<String, dynamic>)).toList();
+          return FolderContents(folderPath: folderPath, files: files, folders: []);
+        } else if (decoded is Map<String, dynamic>) {
+          final filesJson = (decoded['files'] as List? ?? []);
+          final files = filesJson.map((j) => FileModel.fromJson(j as Map<String, dynamic>)).toList();
+          final folders = (decoded['folders'] as List? ?? []).map((e) => e.toString()).toList();
+          return FolderContents(folderPath: decoded['folderPath']?.toString() ?? folderPath, files: files, folders: folders);
+        } else {
+          return FolderContents(folderPath: folderPath, files: [], folders: []);
+        }
+      }
+      return FolderContents(folderPath: folderPath, files: [], folders: []);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[FOLDER] Exception: $e');
+      }
+      return FolderContents(folderPath: folderPath, files: [], folders: []);
+    }
+  }
+}

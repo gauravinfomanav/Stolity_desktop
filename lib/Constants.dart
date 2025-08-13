@@ -22,6 +22,7 @@ class Constants {
   static const uploadfolder = "${baseUrl}upload-folder";
   static const getfiledata = "${baseUrl}getFile?filePath=";
   static const downloadFileByKey = "https://filesapi.infomanav.in/prod/api/aws/download-file?key=";
+  static const getFolder = "https://filesapi.infomanav.in/prod/api/aws/getFolder?folderPath=";
   static const login = "${baseUrl}login-user";
   static const register = "${baseUrl}create-user";
 

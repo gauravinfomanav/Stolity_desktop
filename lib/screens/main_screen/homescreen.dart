@@ -28,6 +28,8 @@ class _HomescreenState extends State<Homescreen> {
   List<FileModel> _searchResults = [];
   String _currentSearchQuery = "";
   List<FileModel> _allFiles = [];
+  final List<String> _folderStack = [];
+  List<FileModel> _currentFolderFiles = [];
 
   @override
   void initState() {
@@ -69,6 +71,8 @@ class _HomescreenState extends State<Homescreen> {
     
     _currentSortOption = "";
     _selectedFileTypes = [];
+    _folderStack.clear();
+    _currentFolderFiles = [];
     _futureFiles = _loadFiles();
   });
 }
@@ -89,6 +93,41 @@ void _refreshWithFileTypes(List<String> fileTypes) {
     _futureFiles = _loadFiles(fileTypes: fileTypes);
   });
 }
+
+  Future<void> _enterFolder(String folderName) async {
+    try {
+      final user = UserController();
+      final contents = await user.getFolderContents(context, folderName);
+      setState(() {
+        _selectedFileNames.clear();
+        _folderStack.add(folderName);
+        _currentFolderFiles = contents.files;
+      });
+    } catch (e) {
+      print('Error entering folder: $e');
+    }
+  }
+
+  Future<void> _backFromFolder() async {
+    if (_folderStack.isEmpty) return;
+    setState(() {
+      _selectedFileNames.clear();
+      _folderStack.removeLast();
+      if (_folderStack.isEmpty) {
+        _currentFolderFiles = [];
+        _futureFiles = _loadFiles();
+      } else {
+        // Reload previous folder
+        final prev = _folderStack.last;
+        // Fire and forget
+        UserController().getFolderContents(context, prev).then((c) {
+          setState(() {
+            _currentFolderFiles = c.files;
+          });
+        });
+      }
+    });
+  }
 
   void _toggleFileSelection(String fileName, bool isSelected) {
     setState(() {
@@ -122,11 +161,16 @@ void _refreshWithFileTypes(List<String> fileTypes) {
     });
   }
 
+  List<FileModel> _getCurrentVisibleFiles() {
+    if (_folderStack.isNotEmpty) return _currentFolderFiles;
+    if (_currentSearchQuery.isNotEmpty) return _searchResults;
+    return _allFiles;
+  }
+
   // Modified method to toggle between select all and deselect all
   void _toggleSelectAll() {
     setState(() {
-      List<FileModel> currentFiles =
-          _currentSearchQuery.isNotEmpty ? _searchResults : _allFiles;
+      List<FileModel> currentFiles = _getCurrentVisibleFiles();
 
       // Check if all files are currently selected
       bool allSelected = currentFiles
@@ -145,8 +189,7 @@ void _refreshWithFileTypes(List<String> fileTypes) {
 
   // Helper method to check if all files are selected
   bool _areAllFilesSelected() {
-    List<FileModel> currentFiles =
-        _currentSearchQuery.isNotEmpty ? _searchResults : _allFiles;
+    List<FileModel> currentFiles = _getCurrentVisibleFiles();
 
     if (currentFiles.isEmpty) return false;
 
@@ -177,8 +220,7 @@ void _refreshWithFileTypes(List<String> fileTypes) {
         },
       );
 
-      List<FileModel> currentFiles =
-          _currentSearchQuery.isNotEmpty ? _searchResults : _allFiles;
+      List<FileModel> currentFiles = _getCurrentVisibleFiles();
       List<FileModel> filesToDelete = currentFiles
           .where((file) => _selectedFileNames.contains(file.fileName))
           .toList();
@@ -345,6 +387,29 @@ void _refreshWithFileTypes(List<String> fileTypes) {
             ),
           ),
         if (_selectedFileNames.isNotEmpty) const SizedBox(height: 10),
+        if (_folderStack.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: GestureDetector(
+              onTap: _backFromFolder,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDF8F4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFFEFE1)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.arrow_back_ios_new, size: 14, color: Colors.black87),
+                    SizedBox(width: 6),
+                    Text('Back', style: TextStyle(fontSize: 12, color: Colors.black87)),
+                  ],
+                ),
+              ),
+            ),
+          ),
         Expanded(
           child: _currentSearchQuery.isNotEmpty
               ? _searchResults.isEmpty
@@ -361,12 +426,16 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                               fileUrl: file.url,
                               dateModified: file.uploadDateTime,
                               fileType: file.fileType,
-                              isSelected:
-                                  _selectedFileNames.contains(file.fileName),
+                              isSelected: _selectedFileNames
+                                  .contains(file.fileName),
                               onTap: () {
-                                final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
-                                _fileopencontroller.fetchAndOpenFile(
-                                    context, file.fileName, fileKey: keyFromUrl);
+                                final keyFromUrl = file.url.isNotEmpty ? file.url : null;
+                                if (file.isFolder) {
+                                  _enterFolder(file.fileName);
+                                } else {
+                                  _fileopencontroller.fetchAndOpenFile(
+                                      context, file.fileName, fileKey: keyFromUrl);
+                                }
                               },
                               onSelect: (selected) {
                                 _toggleFileSelection(file.fileName, selected);
@@ -387,85 +456,153 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                     isSelected: _selectedFileNames
                                         .contains(file.fileName),
                                     onTap: () {
-                                      final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
-                                      _fileopencontroller.fetchAndOpenFile(
-                                          context, file.fileName, fileKey: keyFromUrl);
+                                      final keyFromUrl = file.url.isNotEmpty ? file.url : null;
+                                      if (file.isFolder) {
+                                        _enterFolder(file.fileName);
+                                      } else {
+                                        _fileopencontroller.fetchAndOpenFile(
+                                            context, file.fileName, fileKey: keyFromUrl);
+                                      }
                                     },
                                     onSelect: (selected) {
-                                      _toggleFileSelection(
-                                          file.fileName, selected);
+                                      _toggleFileSelection(file.fileName, selected);
                                     },
                                   ))
                               .toList(),
                           key: const Key('responsive_file_grid'),
                         )
-              : FutureBuilder<List<FileModel>>(
-                  future: _futureFiles,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Center(child: Text('No files found.'));
-                    } else {
-                      final files = snapshot.data!;
-                      return _viewMode == 0
-                          ? ListView.builder(
-                              itemCount: files.length,
-                              itemBuilder: (context, index) {
-                                final file = files[index];
-                                return FileCell(
-                                  fileName: file.fileName,
-                                  fileSize: file.fileSize,
-                                  fileIcon: file.icon,
-                                  fileUrl: file.url,
-                                  dateModified: file.uploadDateTime,
-                                  fileType: file.fileType,
-                                  isSelected: _selectedFileNames
-                                      .contains(file.fileName),
-                                  onTap: () {
-                                    final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
-                                    _fileopencontroller.fetchAndOpenFile(
-                                        context, file.fileName, fileKey: keyFromUrl);
-                                  },
-                                  onSelect: (selected) {
-                                    _toggleFileSelection(
-                                        file.fileName, selected);
-                                  },
-                                  onDelete: _handleFileDeletion,
-                                );
+              : (_folderStack.isNotEmpty
+                  ? (_viewMode == 0
+                      ? ListView.builder(
+                          itemCount: _currentFolderFiles.length,
+                          itemBuilder: (context, index) {
+                            final file = _currentFolderFiles[index];
+                            return FileCell(
+                              fileName: file.fileName,
+                              fileSize: file.fileSize,
+                              fileIcon: file.icon,
+                              fileUrl: file.url,
+                              dateModified: file.uploadDateTime,
+                              fileType: file.fileType,
+                              isSelected:
+                                  _selectedFileNames.contains(file.fileName),
+                              onTap: () {
+                                final keyFromUrl = file.url.isNotEmpty ? file.url : null;
+                                if (file.isFolder) {
+                                  _enterFolder(file.fileName);
+                                } else {
+                                  _fileopencontroller.fetchAndOpenFile(
+                                      context, file.fileName, fileKey: keyFromUrl);
+                                }
                               },
-                            )
-                          : ResponsiveFileGrid(
-                              files: files
-                                  .map((file) => FileGridCell(
-                                        fileName: file.fileName,
-                                        fileSize: file.fileSize,
-                                        fileIcon: file.icon,
-                                        fileUrl: file.url,
-                                        dateModified: file.uploadDateTime,
-                                        fileType: file.fileType,
-                                        isSelected: _selectedFileNames
-                                            .contains(file.fileName),
-                                        onTap: () {
-                                          final keyFromUrl = file.url.isNotEmpty ? Uri.parse(file.url).path.substring(1) : null;
+                              onSelect: (selected) {
+                                _toggleFileSelection(file.fileName, selected);
+                              },
+                              onDelete: _handleFileDeletion,
+                            );
+                          },
+                        )
+                      : ResponsiveFileGrid(
+                          files: _currentFolderFiles
+                              .map((file) => FileGridCell(
+                                    fileName: file.fileName,
+                                    fileSize: file.fileSize,
+                                    fileIcon: file.icon,
+                                    fileUrl: file.url,
+                                    dateModified: file.uploadDateTime,
+                                    fileType: file.fileType,
+                                    isSelected: _selectedFileNames
+                                        .contains(file.fileName),
+                                    onTap: () {
+                                      final keyFromUrl = file.url.isNotEmpty ? file.url : null;
+                                      if (file.isFolder) {
+                                        _enterFolder(file.fileName);
+                                      } else {
+                                        _fileopencontroller.fetchAndOpenFile(
+                                            context, file.fileName, fileKey: keyFromUrl);
+                                      }
+                                    },
+                                    onSelect: (selected) {
+                                      _toggleFileSelection(file.fileName, selected);
+                                    },
+                                  ))
+                              .toList(),
+                          key: const Key('responsive_file_grid'),
+                        ))
+                  : FutureBuilder<List<FileModel>>(
+                      future: _futureFiles,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Center(child: Text('Error: ${snapshot.error}'));
+                        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(child: Text('No files available.'));
+                        } else {
+                          final files = snapshot.data!;
+                          return _viewMode == 0
+                              ? ListView.builder(
+                                  itemCount: files.length,
+                                  itemBuilder: (context, index) {
+                                    final file = files[index];
+                                    return FileCell(
+                                      fileName: file.fileName,
+                                      fileSize: file.fileSize,
+                                      fileIcon: file.icon,
+                                      fileUrl: file.url,
+                                      dateModified: file.uploadDateTime,
+                                      fileType: file.fileType,
+                                      isSelected: _selectedFileNames
+                                          .contains(file.fileName),
+                                      onTap: () {
+                                        final keyFromUrl = file.url.isNotEmpty ? file.url : null;
+                                        if (file.isFolder) {
+                                          _enterFolder(file.fileName);
+                                        } else {
                                           _fileopencontroller.fetchAndOpenFile(
                                               context, file.fileName, fileKey: keyFromUrl);
-                                        },
-                                        onSelect: (selected) {
-                                          _toggleFileSelection(
-                                              file.fileName, selected);
-                                        },
-                                      ))
-                                  .toList(),
-                              key: const Key('responsive_file_grid'),
-                            );
-                    }
-                  },
-                ),
-        ),
-      ]),
+                                        }
+                                      },
+                                      onSelect: (selected) {
+                                        _toggleFileSelection(
+                                            file.fileName, selected);
+                                      },
+                                      onDelete: _handleFileDeletion,
+                                    );
+                                  },
+                                )
+                              : ResponsiveFileGrid(
+                                  files: files
+                                      .map((file) => FileGridCell(
+                                            fileName: file.fileName,
+                                            fileSize: file.fileSize,
+                                            fileIcon: file.icon,
+                                            fileUrl: file.url,
+                                            dateModified: file.uploadDateTime,
+                                            fileType: file.fileType,
+                                            isSelected: _selectedFileNames
+                                                .contains(file.fileName),
+                                            onTap: () {
+                                              final keyFromUrl = file.url.isNotEmpty ? file.url : null;
+                                              if (file.isFolder) {
+                                                _enterFolder(file.fileName);
+                                              } else {
+                                                _fileopencontroller.fetchAndOpenFile(
+                                                    context, file.fileName, fileKey: keyFromUrl);
+                                              }
+                                            },
+                                            onSelect: (selected) {
+                                              _toggleFileSelection(
+                                                  file.fileName, selected);
+                                            },
+                                          ))
+                                      .toList(),
+                                  key: const Key('responsive_file_grid'),
+                                );
+                        }
+                      },
+                    )),
+    )]),
     );
   }
 }
