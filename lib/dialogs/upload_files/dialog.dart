@@ -18,18 +18,28 @@ import 'package:stolity_desktop_application/application_constants.dart';
 import 'package:stolity_desktop_application/components/stolity_snackbar.dart';
 
 class FileUploadDialog extends StatefulWidget {
-  const FileUploadDialog({super.key});
+  final int initialTabIndex;
+  const FileUploadDialog({super.key, this.initialTabIndex = 0});
 
   @override
   State<FileUploadDialog> createState() => _FileUploadDialogState();
 }
 
 class _FileUploadDialogState extends State<FileUploadDialog> {
-  int _selectedTabIndex = 0;
+  late int _selectedTabIndex;
   bool _isPrivate = false;
   List<File> selectedFiles = [];
   String selectedFolderPath = ""; // Add this to track the folder path
   bool _isDraggingOver = false;
+
+  @override
+  void initState() {
+    super.initState();
+    int idx = widget.initialTabIndex;
+    if (idx < 0) idx = 0;
+    if (idx > 2) idx = 2;
+    _selectedTabIndex = idx;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -675,35 +685,35 @@ class _FileUploadDialogState extends State<FileUploadDialog> {
 
   Widget _buildFolderTab() {
     final TextEditingController folderNameController = TextEditingController();
-    return Container(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 20,
+              const SizedBox(height: 4),
+              Center(
+                child: Text(
+                  "Create Folder",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
               ),
-              Text("Create Folder",
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black)),
-              const SizedBox(height: 10),
+              
               CustomTextField(
                 title: '',
                 hintText: "Enter Folder Name",
                 controller: folderNameController,
               ),
-              SizedBox(
-                height: 20,
-              ),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 16,
-                runSpacing: 8,
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -713,13 +723,14 @@ class _FileUploadDialogState extends State<FileUploadDialog> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      minimumSize: Size(120, 45),
+                      minimumSize: const Size(120, 45),
                     ),
-                    child: Text('Close'),
+                    child: const Text('Close'),
                   ),
+                  const SizedBox(width: 12),
                   ElevatedButton(
                     onPressed: () async {
-                      String foldername = folderNameController.text;
+                      final String foldername = folderNameController.text;
                       if (foldername.isEmpty) {
                         showStolitySnack(context, "Please enter a folder name");
                         return;
@@ -728,18 +739,17 @@ class _FileUploadDialogState extends State<FileUploadDialog> {
                       folderNameController.clear();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFFFAB49),
+                      backgroundColor: const Color(0xFFFFAB49),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      minimumSize: Size(120, 45),
+                      minimumSize: const Size(120, 45),
                     ),
-                    child: Text('Submit'),
+                    child: const Text('Submit'),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
             ],
           ),
         ),

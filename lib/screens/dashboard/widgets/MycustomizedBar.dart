@@ -134,7 +134,16 @@ class _MyCustomizedBarState extends State<MyCustomizedBar> {
                           ),
                           const SizedBox(width: 12),
                           CustomButtonForHome(
-                              onTap: () {},
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => const FileUploadDialog(initialTabIndex: 2),
+                                ).then((value) {
+                                  if (value == 'refresh' && widget.onRefreshRequested != null) {
+                                    widget.onRefreshRequested!();
+                                  }
+                                });
+                              },
                               text: "Create Folder",
                               svgIconPath: assetutils.create_folder_icon,
                               buttonColor: Colors.white),
