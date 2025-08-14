@@ -23,6 +23,7 @@ class Constants {
   static const getfiledata = "${baseUrl}getFile?filePath=";
   static const downloadFileByKey = "https://filesapi.infomanav.in/prod/api/aws/download-file?key=";
   static const getFolder = "https://filesapi.infomanav.in/prod/api/aws/getFolder?folderPath=";
+  static const downloadFolderZip = "https://filesapi.infomanav.in/prod/api/aws/download-folder?filePath=";
   static const login = "${baseUrl}login-user";
   static const register = "${baseUrl}create-user";
 

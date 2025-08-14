@@ -426,6 +426,10 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                               fileUrl: file.url,
                               dateModified: file.uploadDateTime,
                               fileType: file.fileType,
+                              isFolder: file.isFolder,
+                              folderPath: _folderStack.isEmpty
+                                  ? file.fileName
+                                  : (_folderStack.join('/') + '/' + file.fileName),
                               isSelected: _selectedFileNames
                                   .contains(file.fileName),
                               onTap: () {
@@ -453,6 +457,10 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                     fileUrl: file.url,
                                     dateModified: file.uploadDateTime,
                                     fileType: file.fileType,
+                                    isFolder: file.isFolder,
+                                    folderPath: _folderStack.isEmpty
+                                        ? file.fileName
+                                        : (_folderStack.join('/') + '/' + file.fileName),
                                     isSelected: _selectedFileNames
                                         .contains(file.fileName),
                                     onTap: () {
@@ -484,6 +492,10 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                               fileUrl: file.url,
                               dateModified: file.uploadDateTime,
                               fileType: file.fileType,
+                              isFolder: file.isFolder,
+                              folderPath: _folderStack.isEmpty
+                                  ? file.fileName
+                                  : (_folderStack.join('/') + '/' + file.fileName),
                               isSelected:
                                   _selectedFileNames.contains(file.fileName),
                               onTap: () {
@@ -511,6 +523,10 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                     fileUrl: file.url,
                                     dateModified: file.uploadDateTime,
                                     fileType: file.fileType,
+                                    isFolder: file.isFolder,
+                                    folderPath: _folderStack.isEmpty
+                                        ? file.fileName
+                                        : (_folderStack.join('/') + '/' + file.fileName),
                                     isSelected: _selectedFileNames
                                         .contains(file.fileName),
                                     onTap: () {
@@ -552,6 +568,10 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                       fileUrl: file.url,
                                       dateModified: file.uploadDateTime,
                                       fileType: file.fileType,
+                                      isFolder: file.isFolder,
+                                      folderPath: _folderStack.isEmpty
+                                          ? file.fileName
+                                          : (_folderStack.join('/') + '/' + file.fileName),
                                       isSelected: _selectedFileNames
                                           .contains(file.fileName),
                                       onTap: () {
@@ -580,6 +600,10 @@ void _refreshWithFileTypes(List<String> fileTypes) {
                                             fileUrl: file.url,
                                             dateModified: file.uploadDateTime,
                                             fileType: file.fileType,
+                                            isFolder: file.isFolder,
+                                            folderPath: _folderStack.isEmpty
+                                                ? file.fileName
+                                                : (_folderStack.join('/') + '/' + file.fileName),
                                             isSelected: _selectedFileNames
                                                 .contains(file.fileName),
                                             onTap: () {

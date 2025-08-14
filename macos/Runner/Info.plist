@@ -28,5 +28,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>This app needs access to Downloads folder to save files.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>This app needs access to Documents folder to save files.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>This app needs access to Desktop folder to save files.</string>
 </dict>
 </plist>

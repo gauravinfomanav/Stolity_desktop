@@ -17,6 +17,8 @@ class FileCell extends StatelessWidget {
   final String? fileIcon;
   final Function(String)? onDelete;
   final String? fileUrl;
+  final bool isFolder;
+  final String? folderPath;
 
   const FileCell({
     Key? key,
@@ -30,6 +32,8 @@ class FileCell extends StatelessWidget {
     this.fileIcon,
     this.onDelete,
     this.fileUrl,
+    this.isFolder = false,
+    this.folderPath,
   }) : super(key: key);
 
   @override
@@ -110,7 +114,12 @@ class FileCell extends StatelessWidget {
                     final keyOrUrl = (fileUrl != null && fileUrl!.isNotEmpty)
                         ? fileUrl!
                         : fileName;
-                    FileOpenController().backgroundDownloadByKey(context, keyOrUrl);
+                    if (isFolder) {
+                      final String path = folderPath ?? fileName;
+                      FileOpenController().downloadFolderZip(context, path);
+                    } else {
+                      FileOpenController().backgroundDownloadByKey(context, keyOrUrl);
+                    }
                     break;
                 }
               },
