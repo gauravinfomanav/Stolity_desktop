@@ -1,4 +1,4 @@
-package com.example.stolity_desktop_application
+package com.stolity
 
 import io.flutter.embedding.android.FlutterActivity
 

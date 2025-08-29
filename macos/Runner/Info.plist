@@ -20,21 +20,21 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>This app needs access to Desktop folder to save files.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>This app needs access to Documents folder to save files.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>This app needs access to Downloads folder to save files.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.productivity</string>
-	<key>NSDownloadsFolderUsageDescription</key>
-	<string>This app needs access to Downloads folder to save files.</string>
-	<key>NSDocumentsFolderUsageDescription</key>
-	<string>This app needs access to Documents folder to save files.</string>
-	<key>NSDesktopFolderUsageDescription</key>
-	<string>This app needs access to Desktop folder to save files.</string>
 </dict>
 </plist>
