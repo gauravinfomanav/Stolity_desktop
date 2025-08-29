@@ -28,6 +28,8 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
 	<key>NSDownloadsFolderUsageDescription</key>
 	<string>This app needs access to Downloads folder to save files.</string>
 	<key>NSDocumentsFolderUsageDescription</key>

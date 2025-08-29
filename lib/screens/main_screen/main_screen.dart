@@ -41,7 +41,7 @@ class _MainScreenState extends State<MainScreen> {
                 SvgPicture.asset(assetutils.stolity_logo_small),
                 const SizedBox(height: 40),
                 _buildSidebarItem(0, assetutils.home_icon),
-                _buildSidebarItem(1, assetutils.user_icon),
+                // _buildSidebarItem(1, assetutils.user_icon),
                 const Spacer(),
                 _buildSidebarItem(2, assetutils.logout_icon),
                 const SizedBox(height: 20),

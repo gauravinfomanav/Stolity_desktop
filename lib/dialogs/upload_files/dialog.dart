@@ -49,7 +49,7 @@ class _FileUploadDialogState extends State<FileUploadDialog> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           double dialogWidth = Get.width * 0.6;
-          double dialogHeight = Get.height * 0.6;
+          double dialogHeight = (_selectedTabIndex == 0 && selectedFiles.isNotEmpty) ? Get.height * 0.75 : Get.height * 0.6;
 
           if (_selectedTabIndex == 1) {
             dialogWidth = Get.width * 0.6;

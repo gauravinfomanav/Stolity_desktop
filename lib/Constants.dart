@@ -26,6 +26,7 @@ class Constants {
   static const downloadFolderZip = "https://filesapi.infomanav.in/prod/api/aws/download-folder?filePath=";
   static const login = "${baseUrl}login-user";
   static const register = "${baseUrl}create-user";
+  static const getFolderSize = "${baseUrl}get-folder-size";
 
   static double stolityIconSize(BuildContext context) {
     final width = MediaQuery.of(context).size.width;

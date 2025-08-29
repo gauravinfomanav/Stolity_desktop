@@ -214,6 +214,44 @@ Future<bool> _deleteSingleFile(BuildContext context, FileModel file, String? acc
     return _fetchFiles(context, url);
   }
 
+  Future<UserFolderSize?> getUserFolderSize(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? accessToken = prefs.getString('accessToken');
+      if (accessToken == null || accessToken.isEmpty) {
+        _showErrorDialog(context, 'Unauthorized. Please login again.');
+        return null;
+      }
+
+      final url = Uri.parse(Constants.getFolderSize);
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return UserFolderSize.fromJson(data);
+      }
+
+      if (response.statusCode == 401) {
+        _showErrorDialog(context, 'Unauthorized. Please login again.');
+        return null;
+      }
+
+      _showErrorDialog(context, 'Failed to load folder size (${response.statusCode}).');
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        print('getUserFolderSize error: $e');
+      }
+      _showErrorDialog(context, 'Error fetching folder size: ${e.toString()}');
+      return null;
+    }
+  }
+
   // Helper method to fetch files from any URL
   Future<List<FileModel>> _fetchFiles(BuildContext context, Uri url) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -325,6 +363,24 @@ class FolderContents {
   final List<FileModel> files;
   final List<String> folders; // names/paths of subfolders
   FolderContents({required this.folderPath, required this.files, required this.folders});
+}
+
+class UserFolderSize {
+  final String prefix;
+  final int sizeInBytes;
+  final String totalSize;
+
+  const UserFolderSize({required this.prefix, required this.sizeInBytes, required this.totalSize});
+
+  factory UserFolderSize.fromJson(Map<String, dynamic> json) {
+    return UserFolderSize(
+      prefix: json['prefix']?.toString() ?? '',
+      sizeInBytes: (json['sizeInBytes'] is int)
+          ? json['sizeInBytes'] as int
+          : int.tryParse(json['sizeInBytes']?.toString() ?? '0') ?? 0,
+      totalSize: json['totalSize']?.toString() ?? '',
+    );
+  }
 }
 
 extension FolderApi on UserController {

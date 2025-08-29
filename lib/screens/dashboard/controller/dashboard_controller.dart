@@ -55,7 +55,7 @@ class DashboardController {
         print('Error!: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('User Not Found.'),
+            content: Text('Please confirm your credentials. User not found.'),
           ),
         );
       }
@@ -101,7 +101,7 @@ class DashboardController {
         print('Signup failed: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Signup failed. Please check your credentials.'),
+            content: Text('Signup failed. Email already exists.'),
           ),
         );
       }
